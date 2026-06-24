@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Farm Ledger — An Animal Farm Study Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFE6CC;
+    --paper-edge:#E2D5AB;
+    --ink:#221D15;
+    --ink-soft:#564B3A;
+    --barn-red:#7C2222;
+    --barn-red-bright:#9C2B2B;
+    --wheat:#B98C2E;
+    --moss:#4F5D38;
+    --moss-bright:#647A45;
+    --rust:#8B4A2B;
+    --backdrop:#15120D;
+    --shadow:rgba(0,0,0,0.5);
+    --font-display:'Anton', sans-serif;
+    --font-head:'Oswald', sans-serif;
+    --font-body:'PT Serif', serif;
+    --font-mono:'Space Mono', monospace;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:radial-gradient(ellipse at top, #221c14 0%, #110f0a 75%);
+    font-family:var(--font-body);
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:clamp(1rem, 4vw, 3rem) 1rem;
+  }
+
+  .stage{
+    width:100%;
+    max-width:740px;
+  }
+
+  .card{
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-top:7px solid var(--barn-red);
+    box-shadow:0 25px 50px var(--shadow);
+    padding:clamp(1.25rem, 4vw, 2.5rem);
+    position:relative;
+    animation:rise .5s ease both;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card{animation:none;}
+  }
+
+  @keyframes rise{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  /* Masthead */
+  .masthead{
+    text-align:center;
+    position:relative;
+    padding-bottom:1rem;
+    margin-bottom:1.25rem;
+    border-bottom:1px solid var(--ink-soft);
+  }
+  .masthead-title{
+    font-family:var(--font-display);
+    font-size:clamp(2rem, 6vw, 2.8rem);
+    letter-spacing:0.04em;
+    color:var(--ink);
+    margin:0;
+    line-height:1;
+  }
+  .masthead-sub{
+    font-family:var(--font-mono);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    font-size:0.68rem;
+    color:var(--ink-soft);
+    margin:0.5rem 0 0.15rem;
+  }
+  .masthead-credit{
+    font-family:var(--font-body);
+    font-style:italic;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    margin:0;
+  }
+  .stamp-badge{
+    position:absolute;
+    top:-10px;
+    right:0;
+    width:64px;
+    height:64px;
+    border:2px solid var(--barn-red);
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transform:rotate(-12deg);
+    color:var(--barn-red);
+    font-family:var(--font-mono);
+    font-size:0.55rem;
+    text-align:center;
+    line-height:1.1;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    opacity:0.85;
+  }
+
+  /* Gauge */
+  .gauge-wrap{
+    margin-bottom:1.5rem;
+  }
+  .gauge-row{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--font-mono);
+    font-size:0.62rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+  }
+  .gauge-row span:first-child{color:var(--moss);}
+  .gauge-row span:last-child{color:var(--barn-red);}
+  .gauge-track{
+    position:relative;
+    height:10px;
+    margin:8px 0 6px;
+    border:1px solid var(--ink);
+    background:linear-gradient(to right, var(--moss-bright), var(--paper-edge) 50%, var(--barn-red-bright));
+  }
+  .gauge-needle{
+    position:absolute;
+    top:-6px;
+    width:12px;
+    height:22px;
+    background:var(--ink);
+    transform:translateX(-50%) rotate(45deg);
+    transition:left 0.7s ease;
+    border:1px solid var(--paper);
+  }
+  .gauge-status{
+    text-align:center;
+    font-family:var(--font-mono);
+    font-size:0.68rem;
+    color:var(--ink-soft);
+    letter-spacing:0.03em;
+  }
+
+  /* Content shared */
+  .eyebrow{
+    font-family:var(--font-mono);
+    text-transform:uppercase;
+    font-size:0.68rem;
+    letter-spacing:0.08em;
+    color:var(--barn-red);
+    margin:0 0 0.4rem;
+  }
+  .progress-dots{
+    display:flex;
+    gap:6px;
+    margin-bottom:1rem;
+  }
+  .dot{
+    width:9px;
+    height:9px;
+    border:1px solid var(--ink);
+    background:transparent;
+  }
+  .dot.filled{background:var(--barn-red); border-color:var(--barn-red);}
+  .dot.current{background:var(--wheat); border-color:var(--ink);}
+
+  .chapter-title{
+    font-family:var(--font-head);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    font-size:clamp(1.25rem, 4vw, 1.6rem);
+    margin:0 0 0.75rem;
+  }
+  .narrative{
+    font-size:1.02rem;
+    line-height:1.65;
+    margin:0 0 1.5rem;
+    color:var(--ink);
+  }
+
+  .choices{display:flex; flex-direction:column; gap:0.6rem;}
+  .choice-btn{
+    font-family:var(--font-body);
+    font-size:0.98rem;
+    text-align:left;
+    background:transparent;
+    border:2px solid var(--ink);
+    padding:0.75rem 1rem;
+    cursor:pointer;
+    color:var(--ink);
+    transition:background 0.15s ease, transform 0.1s ease;
+  }
+  .choice-btn:hover{background:var(--paper-edge);}
+  .choice-btn:active{transform:translateY(1px);}
+  .choice-btn::before{content:"▸ "; color:var(--barn-red); font-weight:bold;}
+
+  /* Quiz */
+  .quiz-stamp{
+    display:inline-block;
+    font-family:var(--font-head);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    font-size:0.85rem;
+    color:var(--barn-red);
+    border:2px solid var(--barn-red);
+    padding:0.3rem 0.7rem;
+    transform:rotate(-3deg);
+    margin-bottom:1rem;
+  }
+  .quiz-question{
+    font-family:var(--font-head);
+    font-weight:500;
+    font-size:1.05rem;
+    line-height:1.4;
+    margin:0 0 1rem;
+  }
+  .quiz-options{display:flex; flex-direction:column; gap:0.55rem;}
+  .quiz-option{
+    display:flex;
+    align-items:center;
+    gap:0.65rem;
+    font-family:var(--font-body);
+    font-size:0.95rem;
+    text-align:left;
+    background:transparent;
+    border:1px solid var(--ink);
+    padding:0.6rem 0.85rem;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .quiz-option:hover:not(:disabled){background:var(--paper-edge);}
+  .quiz-option .badge{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:0.78rem;
+    width:20px; height:20px;
+    border:1px solid var(--ink);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .quiz-option.correct{border-color:var(--moss); background:#E2E8D6;}
+  .quiz-option.correct .badge{border-color:var(--moss); background:var(--moss); color:var(--paper);}
+  .quiz-option.incorrect{border-color:var(--barn-red); background:#EFD9D2;}
+  .quiz-option.incorrect .badge{border-color:var(--barn-red); background:var(--barn-red); color:var(--paper);}
+  .quiz-option:disabled{cursor:default;}
+
+  .feedback-box{
+    margin-top:1.1rem;
+    padding:0.9rem 1rem;
+    border-left:4px solid var(--ink);
+    background:rgba(0,0,0,0.04);
+    font-size:0.92rem;
+    line-height:1.55;
+  }
+  .feedback-box.right{border-left-color:var(--moss);}
+  .feedback-box.wrong{border-left-color:var(--barn-red);}
+  .feedback-label{
+    font-family:var(--font-mono);
+    text-transform:uppercase;
+    font-size:0.68rem;
+    letter-spacing:0.06em;
+    display:block;
+    margin-bottom:0.35rem;
+  }
+  .feedback-box.right .feedback-label{color:var(--moss);}
+  .feedback-box.wrong .feedback-label{color:var(--barn-red);}
+
+  .primary-btn{
+    margin-top:1.25rem;
+    font-family:var(--font-head);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    font-size:0.85rem;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:0.7rem 1.4rem;
+    cursor:pointer;
+  }
+  .primary-btn:hover{background:var(--barn-red);}
+
+  /* Intro / End */
+  .intro-text, .end-text{
+    font-size:1.02rem;
+    line-height:1.65;
+    margin-bottom:1.5rem;
+  }
+  .end-title{
+    font-family:var(--font-display);
+    font-size:clamp(1.6rem, 5vw, 2.1rem);
+    letter-spacing:0.02em;
+    color:var(--barn-red);
+    margin:0 0 0.3rem;
+  }
+  .end-kicker{
+    font-family:var(--font-mono);
+    text-transform:uppercase;
+    font-size:0.68rem;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    margin:0 0 0.4rem;
+  }
+
+  .score-panel{
+    display:flex;
+    gap:1.5rem;
+    flex-wrap:wrap;
+    font-family:var(--font-mono);
+    font-size:0.85rem;
+    border:1px solid var(--ink-soft);
+    padding:0.85rem 1rem;
+    margin-bottom:1.5rem;
+  }
+  .score-panel div span{display:block; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:0.2rem;}
+
+  .checkpoint-review{margin-bottom:1.5rem;}
+  .checkpoint-review h3, .discussion h3{
+    font-family:var(--font-head);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    font-size:0.95rem;
+    border-bottom:1px solid var(--ink-soft);
+    padding-bottom:0.4rem;
+    margin-bottom:0.6rem;
+  }
+  .checkpoint-item{
+    display:flex;
+    gap:0.6rem;
+    font-size:0.92rem;
+    padding:0.3rem 0;
+    align-items:baseline;
+  }
+  .checkpoint-item .mark{font-weight:700; width:1.2rem; flex-shrink:0;}
+  .checkpoint-item .mark.yes{color:var(--moss);}
+  .checkpoint-item .mark.no{color:var(--barn-red);}
+
+  .discussion ol{margin:0; padding-left:1.2rem;}
+  .discussion li{margin-bottom:0.6rem; line-height:1.5; font-size:0.95rem;}
+
+  .restart-row{margin-top:1rem;}
+
+  .footer-note{
+    margin-top:1.5rem;
+    padding-top:0.75rem;
+    border-top:1px solid var(--ink-soft);
+    font-family:var(--font-mono);
+    font-size:0.65rem;
+    color:var(--ink-soft);
+    text-align:center;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+
+  :focus-visible{outline:3px solid var(--wheat); outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="card" id="app"></div>
+</div>
+
+<script>
+const STORY = [
+  {
+    title: "The Dream",
+    text: "Old Major, the prize boar, gathers every animal into the big barn. He describes a dream: a world without whips, without Mr Jones, without masters of any kind. \u201CAll men are enemies. All animals are comrades,\u201D he tells them, before teaching them the song Beasts of England. The barn rings with hooves stamping on the floor.",
+    choices: [
+      { label: "Cheer wildly and sing louder than anyone \u2014 this is destiny.", delta: 2 },
+      { label: "Listen carefully, but wonder what happens after the men are gone.", delta: -2 },
+      { label: "Feel a flicker of doubt \u2014 can animals really run a farm alone?", delta: -1 }
+    ],
+    quiz: {
+      stamp: "First Impressions",
+      question: "In the novel's allegory, Old Major's speech most closely echoes the ideas of which real political thinker?",
+      options: ["Karl Marx", "Joseph Stalin", "Tsar Nicholas II", "Winston Churchill"],
+      correct: 0,
+      explanation: "Old Major's vision of animal-only ownership and equality mirrors Marxist theory \u2014 the idealism behind the real Russian Revolution, not any single leader who later seized power."
+    }
+  },
+  {
+    title: "The Taking of the Farm",
+    text: "Mr Jones, hungover and forgetful, leaves the animals unfed. Hunger turns to fury, fury turns to revolt \u2014 and within an hour, Jones and his men are chased through the gate for good. The animals stand in the farmhouse, hardly believing the fields are theirs. The pigs, being the cleverest, quietly take charge of organising what comes next.",
+    choices: [
+      { label: "Help write the new rules together, so everyone gets a say.", delta: -2 },
+      { label: "Celebrate, and trust the pigs to sort out the boring details.", delta: 2 },
+      { label: "Enjoy the freedom for now \u2014 you'll worry about rules later.", delta: 1 }
+    ],
+    quiz: {
+      stamp: "Power Check",
+      question: "Within days, the pigs are already running the farm. What does this suggest about the revolution's promise of equality?",
+      options: ["Equality was achieved immediately", "A new ruling class was forming before anyone noticed", "The animals voted fairly for pig leadership", "Mr Jones secretly still controlled the farm"],
+      correct: 1,
+      explanation: "No vote ever happens. The pigs simply assume control because they can read and write \u2014 power slips toward the most capable communicators before anyone has time to object."
+    }
+  },
+  {
+    title: "Where Did the Milk Go?",
+    text: "Days later, the cows' milk vanishes, and so do the windfall apples. When animals ask why, Squealer arrives, smooth-tongued as ever, explaining that the pigs need this food to fuel the brainwork that keeps the whole farm running. \u201CSurely none of you wants to see Jones come back?\u201D he asks. Nobody does.",
+    choices: [
+      { label: "Nod along \u2014 the pigs do work hard at thinking.", delta: 3 },
+      { label: "Feel uneasy, but say nothing \u2014 arguing seems risky.", delta: -1 },
+      { label: "Ask Squealer directly why no one voted on this.", delta: -3 }
+    ],
+    quiz: {
+      stamp: "Propaganda Check",
+      question: "Squealer ends his explanation by asking, \u201CSurely none of you wants to see Jones come back?\u201D Which technique is this?",
+      options: ["Bandwagon appeal", "False dilemma \u2014 hiding every option between two extremes", "Statistics manipulation", "Name-calling"],
+      correct: 1,
+      explanation: "Squealer offers only two choices: accept the pigs' privileges, or welcome back Jones's cruelty. He hides every option in between \u2014 like simply taking a vote."
+    }
+  },
+  {
+    title: "The Windmill Debate",
+    text: "Snowball draws up plans for a windmill that could bring electricity and shorter working days. Napoleon dismisses the idea outright \u2014 until, oddly, he starts presenting it as his own. The farm splits into camps. Then, mid-debate, nine enormous dogs burst in. Snowball runs for his life and is never seen on the farm again.",
+    choices: [
+      { label: "Speak up for Snowball's plan \u2014 he started it, after all.", delta: -3 },
+      { label: "Stay quiet and watch which pig comes out on top.", delta: 2 },
+      { label: "Cheer for Napoleon \u2014 he clearly has the dogs on his side.", delta: 3 }
+    ],
+    quiz: {
+      stamp: "History Check",
+      question: "Napoleon's dogs driving Snowball off the farm most closely mirrors which real event?",
+      options: ["Stalin exiling Trotsky, his rival for power", "The storming of the Winter Palace", "The assassination of Tsar Nicholas II", "The Allied invasion of Germany"],
+      correct: 0,
+      explanation: "Like Stalin, Napoleon doesn't out-argue his rival \u2014 he removes him by force, then rewrites the story afterwards."
+    }
+  },
+  {
+    title: "The Commandment That Changed",
+    text: "You're almost certain Commandment Four once read \u201CNo animal shall sleep in a bed with sheets.\u201D Now, painted fresh on the barn wall, it simply says \u201CNo animal shall sleep in a bed.\u201D The pigs have been sleeping in the farmhouse beds for weeks. Around you, animals murmur, then fall quiet, one by one.",
+    choices: [
+      { label: "Point at the wall and say what you remember out loud.", delta: -3 },
+      { label: "Decide your memory must be playing tricks on you.", delta: 3 },
+      { label: "Stay silent, but quietly remember what it used to say.", delta: -1 }
+    ],
+    quiz: {
+      stamp: "Memory Check",
+      question: "Animals convincing themselves their memories must be wrong, rather than trust what they actually saw, is an example of:",
+      options: ["Dramatic irony", "Doublethink \u2014 holding a false belief while half-knowing the truth", "Foreshadowing", "Satire"],
+      correct: 1,
+      explanation: "Orwell later named this exact idea \u201Cdoublethink\u201D in Nineteen Eighty-Four \u2014 but he shows it happening on the farm first."
+    }
+  },
+  {
+    title: "Boxer's Last Day",
+    text: "Boxer, the cart-horse who never once complains, collapses while hauling stone for the windmill. \u201CI will work harder,\u201D he gasps, even now. Days later, a van arrives bearing the markings of a horse slaughterer. Squealer rushes over, breathless, insisting it's actually a van taking Boxer to hospital.",
+    choices: [
+      { label: "Believe Squealer \u2014 surely they wouldn't lie about this.", delta: 3 },
+      { label: "Feel sick with suspicion, but you're only one animal.", delta: -2 },
+      { label: "Try to warn the others before the van leaves.", delta: -3 }
+    ],
+    quiz: {
+      stamp: "Symbol Check",
+      question: "Boxer's loyalty and his motto \u201CI will work harder\u201D make him a symbol of:",
+      options: ["The pigs' cunning leadership", "The exploited working class, whose labour and trust are used against them", "Mr Jones and the old order", "The farm's wild animals"],
+      correct: 1,
+      explanation: "Boxer gives everything to a cause that ultimately discards him \u2014 Orwell's clearest picture of ordinary people exploited by the very revolution meant to free them."
+    }
+  },
+  {
+    title: "All Animals Are Equal",
+    text: "Years on, the pigs walk upright on two legs, carry whips, and trade with neighbouring farms. A new line appears on the barn wall \u2014 the only commandment left: ALL ANIMALS ARE EQUAL, BUT SOME ANIMALS ARE MORE EQUAL THAN OTHERS. Watching the farmhouse window, the other animals can no longer tell which faces are pig and which are human.",
+    choices: [
+      { label: "Decide this is simply how things were always meant to be.", delta: 3 },
+      { label: "Realise the revolution promised equality and delivered a new master.", delta: -3 },
+      { label: "Feel nothing has really changed, only who's holding the whip.", delta: -1 }
+    ],
+    quiz: {
+      stamp: "Verdict Check",
+      question: "What does the final image \u2014 pigs indistinguishable from humans \u2014 suggest about the revolution's outcome?",
+      options: ["The pigs literally evolved into humans", "The farm achieved the equality Old Major dreamed of", "Power simply changed hands, ending where it began", "Mr Jones returned in disguise"],
+      correct: 2,
+      explanation: "The revolution didn't abolish tyranny \u2014 it just gave it a new face. Orwell's warning is that without ongoing vigilance, every revolution risks repeating the system it replaced."
+    }
+  }
+];
+
+const MIN_METER = -26, MAX_METER = 26;
+
+let state = {
+  idx: 0,
+  phase: "intro",
+  meter: 0,
+  correct: 0,
+  checkpoints: [],
+  pendingDelta: 0,
+  selected: null
+};
+
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+function meterPercent(){
+  return ((clamp(state.meter, MIN_METER, MAX_METER) - MIN_METER) / (MAX_METER - MIN_METER)) * 100;
+}
+
+function leaningLabel(){
+  if (state.meter <= -9) return "Leaning toward a questioning mind";
+  if (state.meter >= 9) return "Leaning toward blind loyalty";
+  return "Holding the middle ground \u2014 for now";
+}
+
+function gaugeHTML(){
+  return `
+    <div class="gauge-wrap">
+      <div class="gauge-row"><span>Questioning Mind</span><span>Blind Loyalty</span></div>
+      <div class="gauge-track">
+        <div class="gauge-needle" style="left:${meterPercent()}%;"></div>
+      </div>
+      <div class="gauge-status">${leaningLabel()}</div>
+    </div>
+  `;
+}
+
+function mastheadHTML(){
+  return `
+    <div class="masthead">
+      <div class="stamp-badge">EST.<br>1945</div>
+      <h1 class="masthead-title">THE FARM LEDGER</h1>
+      <p class="masthead-sub">A study of power, propaganda &amp; revolution</p>
+      <p class="masthead-credit">based on George Orwell's Animal Farm</p>
+    </div>
+  `;
+}
+
+function dotsHTML(){
+  let dots = "";
+  for(let i=0;i<STORY.length;i++){
+    let cls = "dot";
+    if (i < state.idx) cls += " filled";
+    else if (i === state.idx && state.phase !== "end") cls += " current";
+    dots += `<div class="${cls}"></div>`;
+  }
+  return `<div class="progress-dots">${dots}</div>`;
+}
+
+function render(){
+  const app = document.getElementById("app");
+  let html = mastheadHTML();
+
+  if (state.phase === "intro"){
+    html += gaugeHTML();
+    html += `
+      <p class="eyebrow">Prologue</p>
+      <h2 class="chapter-title">Manor Farm, the night the gate is left unlatched</h2>
+      <p class="intro-text">You're one of the animals about to live through a revolution \u2014 and its betrayal. Across seven moments, you'll choose how to react, then face a checkpoint testing what you noticed. Every choice and every answer nudges the gauge above, from a questioning mind toward blind loyalty. Takes about ten minutes.</p>
+      <button class="primary-btn" onclick="beginGame()">Begin the Story</button>
+    `;
+  } else if (state.phase === "story"){
+    const ch = STORY[state.idx];
+    html += gaugeHTML();
+    html += `<p class="eyebrow">Chapter ${state.idx+1} of ${STORY.length}</p>`;
+    html += dotsHTML();
+    html += `<h2 class="chapter-title">${ch.title}</h2>`;
+    html += `<p class="narrative">${ch.text}</p>`;
+    html += `<div class="choices">`;
+    ch.choices.forEach((c, i) => {
+      html += `<button class="choice-btn" onclick="chooseOption(${i})">${c.label}</button>`;
+    });
+    html += `</div>`;
+  } else if (state.phase === "quiz"){
+    const ch = STORY[state.idx];
+    const q = ch.quiz;
+    html += gaugeHTML();
+    html += `<p class="eyebrow">Chapter ${state.idx+1} of ${STORY.length} \u2014 Checkpoint</p>`;
+    html += dotsHTML();
+    html += `<span class="quiz-stamp">${q.stamp}</span>`;
+    html += `<p class="quiz-question">${q.question}</p>`;
+    html += `<div class="quiz-options">`;
+    const letters = ["A","B","C","D"];
+    q.options.forEach((opt, i) => {
+      html += `<button class="quiz-option" onclick="selectAnswer(${i})"><span class="badge">${letters[i]}</span><span>${opt}</span></button>`;
+    });
+    html += `</div>`;
+  } else if (state.phase === "feedback"){
+    const ch = STORY[state.idx];
+    const q = ch.quiz;
+    const isRight = state.selected === q.correct;
+    html += gaugeHTML();
+    html += `<p class="eyebrow">Chapter ${state.idx+1} of ${STORY.length} \u2014 Checkpoint</p>`;
+    html += dotsHTML();
+    html += `<span class="quiz-stamp">${q.stamp}</span>`;
+    html += `<p class="quiz-question">${q.question}</p>`;
+    html += `<div class="quiz-options">`;
+    const letters = ["A","B","C","D"];
+    q.options.forEach((opt, i) => {
+      let cls = "quiz-option disabled";
+      if (i === q.correct) cls += " correct";
+      else if (i === state.selected) cls += " incorrect";
+      html += `<button class="${cls}" disabled><span class="badge">${letters[i]}</span><span>${opt}</span></button>`;
+    });
+    html += `</div>`;
+    html += `<div class="feedback-box ${isRight ? "right" : "wrong"}">
+      <span class="feedback-label">${isRight ? "Correct" : "Not quite"}</span>
+      ${q.explanation}
+    </div>`;
+    html += `<button class="primary-btn" onclick="continueNext()">${state.idx < STORY.length-1 ? "Continue" : "See Your Result"}</button>`;
+  } else if (state.phase === "end"){
+    html += gaugeHTML();
+    const ending = getEnding();
+    html += `<p class="end-kicker">Your ending</p>`;
+    html += `<h2 class="end-title">${ending.title}</h2>`;
+    html += `<p class="end-text">${ending.text}</p>`;
+    html += `<div class="score-panel">
+      <div><span>Checkpoints correct</span>${state.correct} / ${STORY.length}</div>
+      <div><span>Final gauge reading</span>${leaningLabel()}</div>
+    </div>`;
+    html += `<div class="checkpoint-review"><h3>Checkpoint Review</h3>`;
+    state.checkpoints.forEach(cp => {
+      html += `<div class="checkpoint-item"><span class="mark ${cp.right ? "yes" : "no"}">${cp.right ? "\u2713" : "\u2717"}</span><span>${cp.title} \u2014 ${cp.stamp}</span></div>`;
+    });
+    html += `</div>`;
+    html += `<div class="discussion"><h3>For Discussion</h3><ol>
+      <li>Which choice felt hardest to make, and why?</li>
+      <li>Compare your playthrough to a specific character \u2014 Boxer, Benjamin, Mollie, or a sheep. What do you share with them?</li>
+      <li>Pick one checkpoint above that could also describe a power struggle happening in the world today. What's the parallel?</li>
+    </ol></div>`;
+    html += `<div class="restart-row"><button class="primary-btn" onclick="restartGame()">Play Again</button></div>`;
+  }
+
+  html += `<div class="footer-note">Year 10 English \u00B7 Animal Farm \u00B7 Power, Propaganda &amp; Revolution</div>`;
+  app.innerHTML = html;
+}
+
+function beginGame(){
+  state.phase = "story";
+  render();
+}
+
+function chooseOption(i){
+  const ch = STORY[state.idx];
+  state.meter = clamp(state.meter + ch.choices[i].delta, MIN_METER, MAX_METER);
+  state.phase = "quiz";
+  render();
+}
+
+function selectAnswer(i){
+  const ch = STORY[state.idx];
+  const q = ch.quiz;
+  const right = i === q.correct;
+  state.selected = i;
+  if (right){
+    state.correct += 1;
+    state.meter = clamp(state.meter - 1, MIN_METER, MAX_METER);
+  } else {
+    state.meter = clamp(state.meter + 1, MIN_METER, MAX_METER);
+  }
+  state.checkpoints.push({ title: ch.title, stamp: q.stamp, right: right });
+  state.phase = "feedback";
+  render();
+}
+
+function continueNext(){
+  if (state.idx < STORY.length - 1){
+    state.idx += 1;
+    state.selected = null;
+    state.phase = "story";
+  } else {
+    state.phase = "end";
+  }
+  render();
+}
+
+function getEnding(){
+  if (state.meter <= -9){
+    return {
+      title: "The Watchful Eye",
+      text: "You questioned the milk, doubted the dogs, and remembered what the wall used to say. In Orwell's farm, animals like you rarely lasted \u2014 but they're exactly who he wrote the book for. You read between every line, which is the whole point of reading Animal Farm at all."
+    };
+  } else if (state.meter >= 9){
+    return {
+      title: "A Model Citizen",
+      text: "Every explanation made sense at the time: the milk was for the greater good, the changed commandment was your memory's fault, the van was headed to a hospital. You'd have made an excellent sheep \u2014 and Orwell would say that's exactly the danger."
+    };
+  } else {
+    return {
+      title: "Caught in the Doublethink",
+      text: "You noticed things were wrong more than once \u2014 and stayed quiet more than once, too. That's most of Manor Farm, and possibly most of history: not blind, not brave, just getting by. Orwell's sharpest point may be aimed exactly here."
+    };
+  }
+}
+
+function restartGame(){
+  state = { idx: 0, phase: "intro", meter: 0, correct: 0, checkpoints: [], pendingDelta: 0, selected: null };
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
